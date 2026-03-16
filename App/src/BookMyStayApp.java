@@ -4,19 +4,12 @@ import java.util.*;
  * ===============================================================
  * CLASS - Reservation
  * ===============================================================
- *
- * Use Case 5: Booking Request (FIFO)
- *
- * Description:
- * This class represents a booking request made by a guest.
- * At this stage, a reservation only captures intent.
- *
- * @version 5.0
+ * Represents a booking request made by a guest.
  */
 
 public class BookMyStayApp {
 
-    /* ================= RESERVATION CLASS ================= */
+    /* ================= RESERVATION ================= */
 
     static class Reservation {
 
@@ -60,26 +53,101 @@ public class BookMyStayApp {
         }
     }
 
+    /* ================= ROOM INVENTORY ================= */
+
+    static class RoomInventory {
+
+        private Map<String, Integer> roomAvailability;
+
+        public RoomInventory() {
+
+            roomAvailability = new HashMap<>();
+
+            roomAvailability.put("Single", 2);
+            roomAvailability.put("Double", 2);
+            roomAvailability.put("Suite", 1);
+        }
+
+        public Map<String, Integer> getRoomAvailability() {
+            return roomAvailability;
+        }
+
+        public void decreaseRoom(String roomType) {
+
+            int count = roomAvailability.get(roomType);
+            roomAvailability.put(roomType, count - 1);
+        }
+    }
+
+    /* ================= ROOM ALLOCATION SERVICE ================= */
+
+    /**
+     * ===============================================================
+     * CLASS - RoomAllocationService
+     * ===============================================================
+     *
+     * Use Case 6: Reservation Confirmation & Room Allocation
+     *
+     * This class confirms booking requests and assigns rooms.
+     */
+
+    static class RoomAllocationService {
+
+        private int roomIdCounter = 101;
+
+        public void processRequests(BookingRequestQueue queue,
+                                    RoomInventory inventory) {
+
+            while (queue.hasPendingRequests()) {
+
+                Reservation request = queue.getNextRequest();
+                String roomType = request.getRoomType();
+
+                int available =
+                        inventory.getRoomAvailability().get(roomType);
+
+                if (available > 0) {
+
+                    int allocatedRoomId = roomIdCounter++;
+
+                    inventory.decreaseRoom(roomType);
+
+                    System.out.println("Booking Confirmed");
+                    System.out.println("Guest: " + request.getGuestName());
+                    System.out.println("Room Type: " + roomType);
+                    System.out.println("Allocated Room ID: " + allocatedRoomId);
+                    System.out.println();
+
+                } else {
+
+                    System.out.println("Booking Failed");
+                    System.out.println("Guest: " + request.getGuestName());
+                    System.out.println("Room Type: " + roomType);
+                    System.out.println("Reason: No rooms available");
+                    System.out.println();
+                }
+            }
+        }
+    }
+
     /* ================= MAIN METHOD ================= */
 
     public static void main(String[] args) {
 
         BookingRequestQueue queue = new BookingRequestQueue();
 
-        // Guests sending booking requests
         queue.addRequest(new Reservation("Aadi", "Single"));
         queue.addRequest(new Reservation("Rahul", "Double"));
         queue.addRequest(new Reservation("Priya", "Suite"));
+        queue.addRequest(new Reservation("Karan", "Suite")); // extra request
 
-        System.out.println("Processing Booking Requests (FIFO)\n");
+        RoomInventory inventory = new RoomInventory();
 
-        while (queue.hasPendingRequests()) {
+        RoomAllocationService allocationService =
+                new RoomAllocationService();
 
-            Reservation request = queue.getNextRequest();
+        System.out.println("Processing Reservations...\n");
 
-            System.out.println("Guest Name: " + request.getGuestName());
-            System.out.println("Requested Room: " + request.getRoomType());
-            System.out.println();
-        }
+        allocationService.processRequests(queue, inventory);
     }
 }
